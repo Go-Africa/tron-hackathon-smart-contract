@@ -1,0 +1,27 @@
+{
+  "name": "tron-sc-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "flashelperz",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "axios": "^0.27.2",
+    "bignumber.js": "^9.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "keccak": "^3.0.2",
+    "node-schedule": "^2.1.0",
+    "tronweb": "^4.2.0",
+    "solc": "^0.8.9",
+    "tslib": "^2.3.1"
+  }
+}

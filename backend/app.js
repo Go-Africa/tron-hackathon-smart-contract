@@ -4,7 +4,9 @@ const path = require("path");
 const fs = require("fs");
 const schedule = require("node-schedule");
 const app = express();
+const cors = require('cors');
 
+app.use(cors());
 app.use(express.json());
 
 app.use("/projects", projectRoutes);

@@ -9,6 +9,12 @@ var contract;
 var projectContract;
 var stableToken;
 
+/* Transaction options */
+let options = {
+    feeLimit: 1_000_000_000,
+    callValue: 0
+};
+
 /*
 *   Initialize project contract
 *   Get Contributions of the Project
@@ -27,7 +33,7 @@ const getContributions = async () => {
 /* Init Contract and set default Variable *Contract* */
 async function init() {
     try {
-        contract = await tronWeb.contract().at('TX8Am2XjkWdgKbmEtoh71XJQn9rvcuSwuJ');
+        contract = await tronWeb.contract().at('TRUeV3TqZdgzimt73ukLB6JZXFsU2bDvum');
     } catch (error) {
         throw "Unable to get contract instance";
     }
@@ -56,6 +62,28 @@ async function getStableToken() {
     }
 }
 
+/* check transactio hash */
+exports.checkTransactionHash = async (req, res) => {
+    const projectAddress = req.params.address;
+    const userId = req.params.user;
+    const txnHash = req.params.hash;
+    await initProjectContract(projectAddress);
+    try {
+        const isInvestor = await projectContract.checkIfExist(userId).call();
+        if (isInvestor) {
+            try {
+                const tnxChecker = await tronWeb.trx.getConfirmedTransaction(txnHash);
+                return "SUCCESS";
+            } catch (error) {
+                return "ERROR";
+            }
+        }
+        return "ERROR";
+    } catch (error) {
+        return "ERROR";
+    }
+}
+
 /* Get all available project addresses */
 exports.getAllProjects = async (req, res) => {
     await init(); /* First init contract instance */
@@ -69,6 +97,7 @@ exports.getAllProjects = async (req, res) => {
 
 /* Create a project and return address */
 exports.createproject = async (req, res) => {
+    // console.log("24a6da2e40f392be1ef0f102b2918ae47b72b64122704c041a5e6a296f9b262a");
     const body = req.body;
 
     /* Check reference and amount */
@@ -79,19 +108,20 @@ exports.createproject = async (req, res) => {
     await init();
     await getStableToken();
     try {
-        var projectGoal = Number(body.amount) * 1e6; /* convert amount of the project */
+    console.log("Enter");
+        const projectGoal = Number(body.amount) * 1e6; /* convert amount of the project */
         const result = await contract.createProject(
             converter(stableToken.address),
             Number(body.ref),
             projectGoal,
-            body.title
+            body.intitule
         ).send({
             feeLimit: 1_000_000_000,
             callValue: 0,
             shouldPollResponse: true
         });
-        return res.status(200).json({ msg: "Success", success: true, data: result });
-    } catch (error) {
+        return res.status(200).json({ msg: "Success", success: true, data: tronWeb.address.fromHex(result) });
+    } catch (error) {console.log("Error",error);
         return res.status(500).json({ msg: "unable to create project", success: false, data: error.error });
     }
 };
@@ -308,7 +338,8 @@ exports.setScheduler = async (req, res) => {
                 const rate = invest.amount / goalAmount;
                 logicInvestment.push({
                     address: invest.investorAddress,
-                    amount: rate * currentAmount
+                    amount: rate * currentAmount,
+                    mail: invest.email
                 });
             }
 
@@ -319,14 +350,49 @@ exports.setScheduler = async (req, res) => {
                 if (first) {
                     for (const investor of logicInvestment) {
                         try {
-                            console.log('amount', investor.amount);
-                            const sending = await projectContract.sendIncome(investor.address, investor.amount)
-                                .send({
-                                    feeLimit: 1_000_000_000,
-                                    callValue: 0,
-                                    shouldPollResponse: true
-                                });
-                            console.log(`Sending result for ${investor.address}`, sending)
+                            let parameter = [
+                                {
+                                    type: 'address',
+                                    value: investor.address,
+                                },
+                                {
+                                    type: 'uint256',
+                                    value: investor.amount,
+                                }
+                            ];
+
+                            const txn = await tronWeb.transactionBuilder.triggerSmartContract(
+                                contract.address,
+                                "sendIncome(address,uint256)",
+                                options,
+                                parameter
+                            );
+                            const signedtxn = await tronWeb.trx.sign(txn.transaction, "24a6da2e40f392be1ef0f102b2918ae47b72b64122704c041a5e6a296f9b262a");
+                            const response = await tronWeb.trx.sendRawTransaction(signedtxn);
+                            // console.log('amount', investor.amount);
+                            // const sending = await projectContract.sendIncome(investor.address, investor.amount)
+                            //     .send({
+                            //         feeLimit: 1_000_000_000,
+                            //         callValue: 0,
+                            //         shouldPollResponse: true
+                            //     });
+                            // console.log(`Sending result for ${investor.address}`, sending)
+
+                            // Send email to successful notified
+                            axios.get(`https://tron-hackathon-spring-backend.go-africa.io/project/income/${req.params.id}/${investor.mail}`)
+                                .then(
+                                    res => {
+                                        if (~~(res.status / 200) <= 4) {
+                                            console.log("Everything work successfully", res.status);
+                                        } else {
+                                            console.log("Nothing works");
+                                        }
+                                    }
+                                ).catch(
+                                    err => {
+                                        console.log('Here the error', err);
+                                    }
+                                )
                         } catch (error) {
                             console.log("The error", error);
                             failedSending.push(investor);
@@ -336,38 +402,56 @@ exports.setScheduler = async (req, res) => {
                 } else {
                     // If some send has failed send income with failed array of contributors
                     for (const investor of failedSending) {
-                        try {
-                            await projectContract.sendIncome(investor.address, investor.amount)
-                                .send({
-                                    feeLimit: 1_000_000_000,
-                                    callValue: 0,
-                                    shouldPollResponse: true
-                                });
-                        } catch (error) {
-                            console.log("The investor", investor);
-                            console.log("The error", error);
-                            failedSending.push(investor)
-                        }
+                        let parameter = [
+                            {
+                                type: 'address',
+                                value: investor.address,
+                            },
+                            {
+                                type: 'uint256',
+                                value: investor.amount,
+                            }
+                        ];
+
+                        const txn = await tronWeb.transactionBuilder.triggerSmartContract(
+                            contract.address,
+                            "sendIncome(address,uint256)",
+                            options,
+                            parameter
+                        );
+                        const signedtxn = await tronWeb.trx.sign(txn.transaction, "24a6da2e40f392be1ef0f102b2918ae47b72b64122704c041a5e6a296f9b262a");
+                        const response = await tronWeb.trx.sendRawTransaction(signedtxn);
+                        axios.get(`https://tron-hackathon-spring-backend.go-africa.io/project/income/${req.params.id}/${investor.mail}`)
+                            .then(
+                                res => {
+                                    if (~~(res.status / 200) <= 4) {
+                                        console.log("Everything work successfully", res.status);
+                                    } else {
+                                        console.log("Nothing works");
+                                    }
+                                }
+                            ).catch(
+                                err => {
+                                    console.log('Here the error', err);
+                                }
+                            )
+                        // try {
+                        //     await projectContract.sendIncome(investor.address, investor.amount)
+                        //         .send({
+                        //             feeLimit: 1_000_000_000,
+                        //             callValue: 0,
+                        //             shouldPollResponse: true
+                        //         });
+                        // } catch (error) {
+                        //     console.log("The investor", investor);
+                        //     console.log("The error", error);
+                        //     failedSending.push(investor)
+                        // }
                     }
                 }
             } while (failedSending.length > 0);
 
             console.log("Everything work successfully");
-            // Now call Endpoint which send mails to all investors
-            // axios.get(`https://tronbackend.go-africa.io/projet/allInvestors/${req.params.id}`)
-            //     .then(
-            //         res => {
-            //             if (~~(res.status / 200) <= 4) {
-            //                 console.log("Everything work successfully", res.status);
-            //             } else {
-            //                 console.log("Nothing works");
-            //             }
-            //         }
-            //     ).catch(
-            //         err => {
-            //             console.log('Here the error', err);
-            //         }
-            //     )
         } catch (error) {
             throw error;
         }

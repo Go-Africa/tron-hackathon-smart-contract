@@ -18,7 +18,7 @@ module.exports = {
       network_id: '2'
     },
     nile: {
-      privateKey: process.env.PRIVATE_KEY_NILE,
+      privateKey: "24a6da2e40f392be1ef0f102b2918ae47b72b64122704c041a5e6a296f9b262a",
       userFeePercentage: 100,
       feeLimit: 1000 * 1e6,
       fullHost: 'https://api.nileex.io',

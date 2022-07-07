@@ -26,6 +26,7 @@ contract Project {
     */
     struct Investment {
         string investDate;
+        uint256 userId;
         string email;
         address investorAddress;
         uint256 amount;
@@ -62,7 +63,7 @@ contract Project {
     *   goalAmount: the project goalAmount
     *   currentBalance: to current balance of the project
     *   ref: The project reference or project Id (helpfull while trying to get project details using only ref number)
-    *   title: Project title
+    *   intitule: Project intitule
     *   investments: List of all investments
     *   cashins: List of all Project's CashIn
     *   cashOut: List of all Project's cashOut
@@ -73,7 +74,7 @@ contract Project {
     uint256 public goalAmount;
     uint256 public currentBalance;
     uint256 public ref;
-    string public title;
+    string public intitule;
     uint256 public cycleDeadline = 0;
     Investment[] investments;
     CashIn[] cashins;
@@ -98,14 +99,14 @@ contract Project {
         address payable creator,
         uint256 projectRef,
         uint256 projectGoalAmount,
-        string memory projectTitle
+        string memory projectIntitule
     ) {
         trxToken = token;
         projectCreator = creator;
         goalAmount = projectGoalAmount;
         currentBalance = 0;
         ref = projectRef;
-        title = projectTitle;
+        intitule = projectIntitule;
     }
 
     /* 
@@ -178,18 +179,18 @@ contract Project {
         ref = referenceProject;
     }
 
-    /* get The project title */
-    function getTitle() public view returns (string memory) {
-        return title;
+    /* get The project intitule */
+    function getIntitule() public view returns (string memory) {
+        return intitule;
     }
 
     /* 
-    *   Set Project title
+    *   Set Project intitule
     *   Only the project creator can make this request
     */
-    function setTitle(string calldata _title) external {
+    function setIntitule(string calldata _intitule) external {
         require(msg.sender == projectCreator);
-        title = _title;
+        intitule = _intitule;
     }
 
     /* 
@@ -207,6 +208,7 @@ contract Project {
     */
     function invest(
         string calldata investDate,
+        uint256 userId,
         uint256 amount,
         string calldata emailAddress
     ) external payable inState(ProjectState.Fundraising) returns(bool) {
@@ -216,7 +218,7 @@ contract Project {
         );
         trxToken.transferFrom(msg.sender, address(this), msg.value);
 
-        investments.push(Investment(investDate, emailAddress, msg.sender, amount));
+        investments.push(Investment(investDate, userId, emailAddress, msg.sender, amount));
         currentBalance = currentBalance.add(amount);
 
         checkIfComplete();
@@ -304,7 +306,7 @@ contract Project {
         returns (
             address payable creator,
             uint256 projectRef,
-            string memory projectTitle,
+            string memory projectIntitule,
             ProjectState currentState,
             uint256 projectGoalAmount,
             uint256 currentAmount,
@@ -315,7 +317,7 @@ contract Project {
     {
         creator = projectCreator;
         projectRef = ref;
-        projectTitle = title;
+        projectIntitule = intitule;
         currentState = state;
         projectGoalAmount = goalAmount;
         currentAmount = currentBalance;
@@ -345,6 +347,23 @@ contract Project {
             return true;
         }
 
+        return false;
+    }
+
+    /*
+    *  Check If userId is present inside investments list
+    *   return true or false 
+    */
+    function checkIfInvestor(uint256 _userId)
+        public
+        view
+        returns (bool result)
+    {
+        for (uint256 i = 0; i < investments.length; i++) {
+            if ((investments[i].userId == _userId)) {
+                return true;
+            }
+        }
         return false;
     }
 }

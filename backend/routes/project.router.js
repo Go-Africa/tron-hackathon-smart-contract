@@ -13,6 +13,9 @@ router.get("/:id", ProjectController.getProjectById);
 /* Get all project details by address */
 router.get("/details/:address", ProjectController.getAllProjectDetails);
 
+/* Verify if user is an investor */
+router.get("/check/:address/:user/:hash", ProjectController.checkTransactionHash);
+
 /* Get project contributions */
 router.get("/:address/contribs", ProjectController.getProjectContributions);
 

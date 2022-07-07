@@ -21,7 +21,7 @@ contract GoAfrica {
         address contractAddress,
         address projectCreator,
         uint256 ref,
-        string title,
+        string intitule,
         uint256 goalAmount
     );
 
@@ -34,33 +34,54 @@ contract GoAfrica {
             uint256 ref,
             uint256 goalAmount,
             uint256 currentAmount,
-            string memory title
+            string memory intitule
         )
     {
         for (uint256 i = 0; i < projects.length; i++) {
             proj = Project(projects[i]);
             if (proj.getReference() == projectRef) {
-                return (proj, proj.getReference(), proj.getGoalBalance(), proj.getCurrentbalance(), proj.getTitle());
+                return (
+                    proj,
+                    proj.getReference(),
+                    proj.getGoalBalance(),
+                    proj.getCurrentbalance(),
+                    proj.getIntitule()
+                );
             }
         }
-        return (proj, ref, goalAmount, currentAmount, title); /* Return all type default value */
+        return (proj, ref, goalAmount, currentAmount, intitule); /* Return all type default value */
     }
 
-    /* 
-    *   Create a new Project and return it
-    */
+    /* get a project address */
+    function getprojectAddress(uint256 projectRef)
+        external
+        view
+        returns (Project project)
+    {
+        for (uint256 i = 0; i < projects.length; i++) {
+            project = Project(projects[i]);
+            if (project.getReference() == projectRef) {
+                return project;
+            }
+        }
+        return project;
+    }
+
+    /*
+     *   Create a new Project and return it
+     */
     function createProject(
         ITRC20 trxToken,
         uint256 projectRef,
         uint256 projectGoalAmount,
-        string calldata projectTitle
-    ) external returns(Project) {
+        string calldata projectIntitule
+    ) external returns (Project) {
         Project project = new Project(
             trxToken,
             payable(msg.sender),
             projectRef,
             projectGoalAmount,
-            projectTitle
+            projectIntitule
         );
 
         projects.push(project);
@@ -68,7 +89,7 @@ contract GoAfrica {
             address(project),
             msg.sender,
             projectRef,
-            projectTitle,
+            projectIntitule,
             projectGoalAmount
         );
 
@@ -76,7 +97,11 @@ contract GoAfrica {
     }
 
     /* Return all project addresses */
-    function returnProjectsAddresses() external view returns (Project[] memory) {
+    function returnProjectsAddresses()
+        external
+        view
+        returns (Project[] memory)
+    {
         return projects;
-    }    
+    }
 }

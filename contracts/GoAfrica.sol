@@ -21,7 +21,7 @@ contract GoAfrica {
         address contractAddress,
         address projectCreator,
         uint256 ref,
-        string intitule,
+        string title,
         uint256 goalAmount
     );
 
@@ -34,7 +34,7 @@ contract GoAfrica {
             uint256 ref,
             uint256 goalAmount,
             uint256 currentAmount,
-            string memory intitule
+            string memory title
         )
     {
         for (uint256 i = 0; i < projects.length; i++) {
@@ -45,11 +45,11 @@ contract GoAfrica {
                     proj.getReference(),
                     proj.getGoalBalance(),
                     proj.getCurrentbalance(),
-                    proj.getIntitule()
+                    proj.getTitle()
                 );
             }
         }
-        return (proj, ref, goalAmount, currentAmount, intitule); /* Return all type default value */
+        return (proj, ref, goalAmount, currentAmount, title); /* Return all type default value */
     }
 
     /* get a project address */
@@ -74,14 +74,14 @@ contract GoAfrica {
         ITRC20 trxToken,
         uint256 projectRef,
         uint256 projectGoalAmount,
-        string calldata projectIntitule
+        string calldata projectTitle
     ) external returns (Project) {
         Project project = new Project(
             trxToken,
             payable(msg.sender),
             projectRef,
             projectGoalAmount,
-            projectIntitule
+            projectTitle
         );
 
         projects.push(project);
@@ -89,7 +89,7 @@ contract GoAfrica {
             address(project),
             msg.sender,
             projectRef,
-            projectIntitule,
+            projectTitle,
             projectGoalAmount
         );
 

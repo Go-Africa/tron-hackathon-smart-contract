@@ -67,14 +67,15 @@ exports.checkTransactionHash = async (req, res) => {
     const projectAddress = req.params.address;
     const userId = req.params.user;
     const txnHash = req.params.hash;
-    await initProjectContract(projectAddress);
     try {
+        await initProjectContract(projectAddress);
         const isInvestor = await projectContract.checkIfExist(userId).call();
         if (isInvestor) {
             try {
                 const tnxChecker = await tronWeb.trx.getConfirmedTransaction(txnHash);
                 return "SUCCESS";
             } catch (error) {
+            console.log("An error:",error);
                 return "ERROR";
             }
         }
@@ -86,8 +87,8 @@ exports.checkTransactionHash = async (req, res) => {
 
 /* Get all available project addresses */
 exports.getAllProjects = async (req, res) => {
-    await init(); /* First init contract instance */
     try {
+        await init(); /* First init contract instance */
         let data = await contract.returnProjectsAddresses().call();
         return res.status(200).json({ msg: "Success", success: true, data: data });
     } catch (error) {
@@ -105,16 +106,16 @@ exports.createproject = async (req, res) => {
         return res.status(400).json({ msg: "Only Number need for amount or ref", success: false, data: null });
     }
 
-    await init();
-    await getStableToken();
     try {
+        await init();
+        await getStableToken();
     console.log("Enter");
         const projectGoal = Number(body.amount) * 1e6; /* convert amount of the project */
         const result = await contract.createProject(
             converter(stableToken.address),
             Number(body.ref),
             projectGoal,
-            body.intitule
+            body.title
         ).send({
             feeLimit: 1_000_000_000,
             callValue: 0,
@@ -135,13 +136,21 @@ exports.getProjectById = async (req, res) => {
         return res.status(400).json({ msg: "Only Number need here", success: false, data: null });
     }
 
-    await init();
     try {
+        await init();
         const project = await contract.getProjectByRef(Number(id)).call();
         if (project) {
-            console.log("Project goal", project["goalAmount"].toString());
+            // Convert
+            const result = {
+                address: project["proj"],
+                addressFromHex: tronWeb.address.fromHex(project["proj"]),
+                projectRef: project["ref"],
+                goalAmount: project["goalAmount"],
+                currentAmount: project["currentAmount"],
+                title: project["title"]
+            }
 
-            return res.status(200).json({ msg: "Success", success: true, data: project });
+            return res.status(200).json({ msg: "Success", success: true, data: result });
         } else {
             return res.status(500).json({ msg: "unable to create project", success: false, data: error.error });
         }
@@ -151,31 +160,56 @@ exports.getProjectById = async (req, res) => {
     }
 };
 
+// project details converter
+function convertAllData(data) {
+    return {
+        creatorAddress: data["creator"],
+        projectRef: data["projectRef"],
+        projectTitle: data["projectTitle"],
+        currentState: data["currentState"],
+        projectGoalAmount: data["projectGoalAmount"],
+        currentAmount: data["currentAmount"],
+        investments: data["investmentss"],
+        cashins: data["cashinss"],
+        cashouts: data["cashoutss"]
+    };
+}
+
 /*
 *   Get all Project Details
 *   Pass address of the project
 *   Return details, investments, cashins, cashout...
 */
 exports.getAllProjectDetails = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const project = await projectContract.getDetails().call();
-        return res.status(200).json({ msg: "Success", success: true, data: project });
+        return res.status(200).json({ msg: "Success", success: true, data: convertAllData(project) });
     } catch (error) {
         return res.status(500).json({ msg: "unable to get project", success: false, data: error.error });
     }
 }
 
+
+/* Convert contributions data */
+function convertContribsData(data) {
+    return {
+        investments: data["invests"],
+        currentBalance: data["currentAmount"],
+        goalAmount: data["goal"]
+    }
+}
 /*
 *   Get Project Contributions
 *   Pass address of the project
 *   Return investments, golAmount and current amount
 */
 exports.getProjectContributions = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const contribs = await projectContract.getContributions().call();
-        return res.status(200).json({ msg: "Success", success: true, data: contribs });
+        console.log("Contribs", contribs);
+        return res.status(200).json({ msg: "Success", success: true, data: convertContribsData(contribs) });
     } catch (error) {
         return res.status(500).json({ msg: "unable to get data", success: false, data: error.error });
     }
@@ -185,8 +219,8 @@ exports.getProjectContributions = async (req, res) => {
 *   Get Project Cash In
 */
 exports.getProjectCashIns = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const cashins = await projectContract.getCashIns().call();
         return res.status(200).json({ msg: "Success", success: true, data: cashins });
     } catch (error) {
@@ -199,8 +233,8 @@ exports.getProjectCashIns = async (req, res) => {
 *   Get Project Cash Out
 */
 exports.getProjectCashOuts = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const cashouts = await projectContract.getCashOuts().call();
         return res.status(200).json({ msg: "Success", success: true, data: cashouts });
     } catch (error) {
@@ -213,8 +247,8 @@ exports.getProjectCashOuts = async (req, res) => {
 *   Make a Cash In
 */
 exports.addCashIn = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const amount = req.body.amount * 1e6;
         const today = new Date().toISOString();
         const cashin = await projectContract.cashIn(today, req.body.address, req.body.reason, amount)
@@ -234,8 +268,8 @@ exports.addCashIn = async (req, res) => {
 *   Make a Cash Out
 */
 exports.sendCashOut = async (req, res) => {
-    await initProjectContract(req.params.address);
     try {
+        await initProjectContract(req.params.address);
         const amount = req.body.amount * 1e6;
         const today = new Date().toISOString();
         const cashout = await projectContract.cashOut(today, req.body.address, req.body.reason, amount)
@@ -278,12 +312,12 @@ exports.setProjectState = async (req, res) => {
 // Invest to a project
 exports.invest = async (req, res) => {
     let body = req.body;
-    await initProjectContract(req.params.addr);
-    await getStableToken();
-
+    
     var amount = parseInt(body.amount) * 1e6;
-
+    
     try {
+        await initProjectContract(req.params.addr);
+        await getStableToken();
         var approve = await stableToken.approve(projectContract.address, amount)
             .send({
                 feeLimit: 1_000_000_000,

@@ -63,7 +63,7 @@ contract Project {
     *   goalAmount: the project goalAmount
     *   currentBalance: to current balance of the project
     *   ref: The project reference or project Id (helpfull while trying to get project details using only ref number)
-    *   intitule: Project intitule
+    *   title: Project title
     *   investments: List of all investments
     *   cashins: List of all Project's CashIn
     *   cashOut: List of all Project's cashOut
@@ -74,7 +74,7 @@ contract Project {
     uint256 public goalAmount;
     uint256 public currentBalance;
     uint256 public ref;
-    string public intitule;
+    string public title;
     uint256 public cycleDeadline = 0;
     Investment[] investments;
     CashIn[] cashins;
@@ -99,14 +99,14 @@ contract Project {
         address payable creator,
         uint256 projectRef,
         uint256 projectGoalAmount,
-        string memory projectIntitule
+        string memory projectTitle
     ) {
         trxToken = token;
         projectCreator = creator;
         goalAmount = projectGoalAmount;
         currentBalance = 0;
         ref = projectRef;
-        intitule = projectIntitule;
+        title = projectTitle;
     }
 
     /* 
@@ -179,18 +179,18 @@ contract Project {
         ref = referenceProject;
     }
 
-    /* get The project intitule */
-    function getIntitule() public view returns (string memory) {
-        return intitule;
+    /* get The project title */
+    function getTitle() public view returns (string memory) {
+        return title;
     }
 
     /* 
-    *   Set Project intitule
+    *   Set Project title
     *   Only the project creator can make this request
     */
-    function setIntitule(string calldata _intitule) external {
+    function setTitle(string calldata _title) external {
         require(msg.sender == projectCreator);
-        intitule = _intitule;
+        title = _title;
     }
 
     /* 
@@ -306,7 +306,7 @@ contract Project {
         returns (
             address payable creator,
             uint256 projectRef,
-            string memory projectIntitule,
+            string memory projectTitle,
             ProjectState currentState,
             uint256 projectGoalAmount,
             uint256 currentAmount,
@@ -317,7 +317,7 @@ contract Project {
     {
         creator = projectCreator;
         projectRef = ref;
-        projectIntitule = intitule;
+        projectTitle = title;
         currentState = state;
         projectGoalAmount = goalAmount;
         currentAmount = currentBalance;

@@ -216,7 +216,7 @@ contract Project {
             (currentBalance + amount) <= goalAmount,
             "The amount is too big !"
         );
-        trxToken.transferFrom(msg.sender, address(this), msg.value);
+        trxToken.transferFrom(msg.sender, address(this), amount);
 
         investments.push(Investment(investDate, userId, emailAddress, msg.sender, amount));
         currentBalance = currentBalance.add(amount);
@@ -232,7 +232,7 @@ contract Project {
     *   The current address already make and investment
     *   and the new currentBalance is less than or equal to goalAmount
     */
-    function addPart(uint256 amount, address oldAddress, bool changeAddress)
+    function addPart(uint256 amount)
         external
         payable
         inState(ProjectState.Fundraising)
@@ -247,7 +247,7 @@ contract Project {
         uint256 pos;
 
         for (uint256 i = 0; i < invests.length; i++) {
-            if ((invests[i].investorAddress == oldAddress)) {
+            if ((invests[i].investorAddress == msg.sender)) {
                 find = true;
                 pos = i;
                 break;
@@ -258,11 +258,6 @@ contract Project {
             trxToken.transferFrom(msg.sender, address(this), amount);
             investments[pos].amount = investments[pos].amount.add(amount);
             currentBalance = currentBalance.add(amount);
-
-            /* Check if user decide to set this address to default */
-            if(changeAddress) {
-                investments[pos].investorAddress = msg.sender;
-            }
 
             checkIfComplete();
             emit ReceivedFunding(msg.sender, amount, currentBalance);

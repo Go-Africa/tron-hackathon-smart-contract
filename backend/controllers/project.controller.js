@@ -33,7 +33,7 @@ const getContributions = async () => {
 /* Init Contract and set default Variable *Contract* */
 async function init() {
     try {
-        contract = await tronWeb.contract().at('TRUeV3TqZdgzimt73ukLB6JZXFsU2bDvum');
+        contract = await tronWeb.contract().at('TRqyNFWHXzgbJ3UUkgyoYg9qXCYkKmEsM4');
     } catch (error) {
         throw "Unable to get contract instance";
     }
